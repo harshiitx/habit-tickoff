@@ -9,14 +9,23 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -50,23 +59,31 @@ fun HabitCard(
     statusByEpochDay: Map<Long, CompletionStatus>,
     today: Long,
     onToggleDoneToday: () -> Unit,
-    onDayClick: (Long) -> Unit
+    onDayClick: (Long) -> Unit,
+    onEdit: () -> Unit,
+    onDeleteRequest: () -> Unit
 ) {
     val habitColor = parseColorHex(habit.colorHex)
     val streak = currentStreak(statusByEpochDay, today)
     val doneToday = statusByEpochDay[today] == CompletionStatus.DONE
+    var menuExpanded by remember { mutableStateOf(false) }
 
-    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp)) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+    ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
                     Box(
                         modifier = Modifier
-                            .size(44.dp)
+                            .size(48.dp)
                             .background(habitColor.dimmedForEmpty(background = Color.Black), CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
@@ -74,13 +91,32 @@ fun HabitCard(
                     }
                     Column(modifier = Modifier.padding(start = 12.dp)) {
                         Text(habit.name, style = MaterialTheme.typography.titleMedium)
-                        Text("Streak: $streak", style = MaterialTheme.typography.bodySmall)
+                        Text(
+                            "🔥 Streak: $streak",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = habitColor
+                        )
+                    }
+                }
+                Box {
+                    IconButton(onClick = { menuExpanded = true }) {
+                        Icon(Icons.Filled.MoreVert, contentDescription = "More options")
+                    }
+                    DropdownMenu(expanded = menuExpanded, onDismissRequest = { menuExpanded = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Edit") },
+                            onClick = { menuExpanded = false; onEdit() }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Delete") },
+                            onClick = { menuExpanded = false; onDeleteRequest() }
+                        )
                     }
                 }
                 IconButton(
                     onClick = onToggleDoneToday,
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(48.dp)
                         .background(if (doneToday) habitColor else habitColor.dimmedForEmpty(Color.Black), CircleShape)
                 ) {
                     Icon(

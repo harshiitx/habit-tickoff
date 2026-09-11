@@ -29,6 +29,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.harshiitx.habittickoff.ui.common.DatePickerButton
 import com.harshiitx.habittickoff.ui.common.ruledPaperBackground
 import com.harshiitx.habittickoff.ui.theme.HandwrittenFontFamily
 import java.time.LocalDate
@@ -63,11 +64,14 @@ fun JournalScreen(viewModel: JournalViewModel) {
             IconButton(onClick = { viewModel.selectDay(selectedEpochDay - 1) }) {
                 Icon(Icons.Filled.ChevronLeft, contentDescription = "Previous day")
             }
-            Text(
-                dateLabel,
-                style = MaterialTheme.typography.titleMedium.copy(fontFamily = HandwrittenFontFamily),
-                color = Color(0xFF2B2B2B)
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    dateLabel,
+                    style = MaterialTheme.typography.titleMedium.copy(fontFamily = HandwrittenFontFamily),
+                    color = Color(0xFF2B2B2B)
+                )
+                DatePickerButton(selectedEpochDay = selectedEpochDay, onDateSelected = viewModel::selectDay)
+            }
             IconButton(onClick = { viewModel.selectDay(selectedEpochDay + 1) }) {
                 Icon(Icons.Filled.ChevronRight, contentDescription = "Next day")
             }

@@ -19,21 +19,29 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.harshiitx.habittickoff.data.model.ReminderConfig
+import com.harshiitx.habittickoff.data.model.TaskItem
 
 @Composable
 fun AddTaskDialog(
+    existing: TaskItem? = null,
+    existingReminder: ReminderConfig? = null,
     onDismiss: () -> Unit,
-    onAdd: (title: String, startMinute: Int?, endMinute: Int?, remind: Boolean) -> Unit
+    onSave: (title: String, startMinute: Int?, endMinute: Int?, remind: Boolean) -> Unit
 ) {
-    var title by remember { mutableStateOf("") }
-    var hasTime by remember { mutableStateOf(false) }
-    var hourText by remember { mutableStateOf("9") }
-    var minuteText by remember { mutableStateOf("0") }
-    var remind by remember { mutableStateOf(false) }
+    var title by remember { mutableStateOf(existing?.title.orEmpty()) }
+    var hasTime by remember { mutableStateOf(existing?.startMinuteOfDay != null) }
+    var hourText by remember {
+        mutableStateOf(((existing?.startMinuteOfDay ?: 9 * 60) / 60).toString())
+    }
+    var minuteText by remember {
+        mutableStateOf(((existing?.startMinuteOfDay ?: 0) % 60).toString())
+    }
+    var remind by remember { mutableStateOf(existingReminder != null) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("New task") },
+        title = { Text(if (existing != null) "Edit task" else "New task") },
         text = {
             Column {
                 OutlinedTextField(
@@ -85,9 +93,9 @@ fun AddTaskDialog(
                 } else {
                     null
                 }
-                onAdd(title, startMinute, null, hasTime && remind)
+                onSave(title, startMinute, null, hasTime && remind)
             }) {
-                Text("Add")
+                Text(if (existing != null) "Save" else "Add")
             }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }

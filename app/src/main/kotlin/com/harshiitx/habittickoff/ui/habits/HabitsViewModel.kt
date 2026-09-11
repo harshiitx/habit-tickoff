@@ -33,6 +33,9 @@ class HabitsViewModel(
         }
     }
 
+    fun reminderConfigFor(configId: String?): ReminderConfig? =
+        configId?.let { id -> reminderRepository.reminders.value.firstOrNull { it.id == id } }
+
     fun addHabit(
         name: String,
         emoji: String,
@@ -45,20 +48,15 @@ class HabitsViewModel(
         if (name.isBlank()) return
         viewModelScope.launch {
             val habitId = UUID.randomUUID().toString()
-            var reminderConfigId: String? = null
-            if (reminderHour != null && reminderMinute != null) {
-                val config = ReminderConfig(
-                    id = UUID.randomUUID().toString(),
-                    ownerType = ReminderOwnerType.HABIT,
-                    ownerId = habitId,
-                    hour = reminderHour,
-                    minute = reminderMinute,
-                    daysOfWeek = if (frequency == HabitFrequency.SPECIFIC_DAYS) activeDaysOfWeek else (1..7).toSet()
-                )
-                reminderRepository.upsert(config)
-                ReminderScheduler.schedule(appContext, config, name.trim())
-                reminderConfigId = config.id
-            }
+            val reminderConfigId = applyReminder(
+                existingConfigId = null,
+                ownerId = habitId,
+                title = name.trim(),
+                frequency = frequency,
+                activeDaysOfWeek = activeDaysOfWeek,
+                reminderHour = reminderHour,
+                reminderMinute = reminderMinute
+            )
             repository.upsertHabit(
                 Habit(
                     id = habitId,
@@ -74,11 +72,73 @@ class HabitsViewModel(
         }
     }
 
-    fun archiveHabit(habitId: String) {
+    fun updateHabit(
+        habitId: String,
+        name: String,
+        emoji: String,
+        colorHex: String,
+        frequency: HabitFrequency,
+        activeDaysOfWeek: Set<Int>,
+        reminderHour: Int?,
+        reminderMinute: Int?
+    ) {
+        if (name.isBlank()) return
+        viewModelScope.launch {
+            val existing = habits.value.firstOrNull { it.id == habitId } ?: return@launch
+            val reminderConfigId = applyReminder(
+                existingConfigId = existing.reminderConfigId,
+                ownerId = habitId,
+                title = name.trim(),
+                frequency = frequency,
+                activeDaysOfWeek = activeDaysOfWeek,
+                reminderHour = reminderHour,
+                reminderMinute = reminderMinute
+            )
+            repository.upsertHabit(
+                existing.copy(
+                    name = name.trim(),
+                    emoji = emoji,
+                    colorHex = colorHex,
+                    frequency = frequency,
+                    activeDaysOfWeek = activeDaysOfWeek,
+                    reminderConfigId = reminderConfigId
+                )
+            )
+        }
+    }
+
+    /** Creates/updates/cancels the owning reminder as needed and returns the config id to store. */
+    private suspend fun applyReminder(
+        existingConfigId: String?,
+        ownerId: String,
+        title: String,
+        frequency: HabitFrequency,
+        activeDaysOfWeek: Set<Int>,
+        reminderHour: Int?,
+        reminderMinute: Int?
+    ): String? {
+        if (reminderHour == null || reminderMinute == null) {
+            existingConfigId?.let { ReminderScheduler.cancel(appContext, it) }
+            return null
+        }
+        val config = ReminderConfig(
+            id = existingConfigId ?: UUID.randomUUID().toString(),
+            ownerType = ReminderOwnerType.HABIT,
+            ownerId = ownerId,
+            hour = reminderHour,
+            minute = reminderMinute,
+            daysOfWeek = if (frequency == HabitFrequency.SPECIFIC_DAYS) activeDaysOfWeek else (1..7).toSet()
+        )
+        reminderRepository.upsert(config)
+        ReminderScheduler.schedule(appContext, config, title)
+        return config.id
+    }
+
+    fun deleteHabit(habitId: String) {
         viewModelScope.launch {
             val habit = habits.value.firstOrNull { it.id == habitId }
             habit?.reminderConfigId?.let { ReminderScheduler.cancel(appContext, it) }
-            repository.archiveHabit(habitId)
+            repository.deleteHabit(habitId)
         }
     }
 

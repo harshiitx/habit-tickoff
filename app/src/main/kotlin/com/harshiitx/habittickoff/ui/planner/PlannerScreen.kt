@@ -1,5 +1,6 @@
 package com.harshiitx.habittickoff.ui.planner
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -36,6 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.harshiitx.habittickoff.data.model.TaskItem
 import com.harshiitx.habittickoff.data.model.TaskStatus
+import com.harshiitx.habittickoff.ui.common.DatePickerButton
 import com.harshiitx.habittickoff.ui.common.ruledPaperBackground
 import com.harshiitx.habittickoff.ui.theme.HandwrittenFontFamily
 import java.time.LocalDate
@@ -49,6 +51,7 @@ fun PlannerScreen(viewModel: PlannerViewModel) {
     val selectedEpochDay by viewModel.selectedEpochDay.collectAsState()
     val allTasks by viewModel.tasks.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
+    var editingTask by remember { mutableStateOf<TaskItem?>(null) }
     val todayEpochDay = remember { LocalDate.now().toEpochDay() }
 
     val dateLabel = remember(selectedEpochDay) {
@@ -76,11 +79,14 @@ fun PlannerScreen(viewModel: PlannerViewModel) {
                 IconButton(onClick = { viewModel.selectDay(selectedEpochDay - 1) }) {
                     Icon(Icons.Filled.ChevronLeft, contentDescription = "Previous day")
                 }
-                Text(
-                    dateLabel,
-                    style = MaterialTheme.typography.titleMedium.copy(fontFamily = HandwrittenFontFamily),
-                    color = Color(0xFF2B2B2B)
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        dateLabel,
+                        style = MaterialTheme.typography.titleMedium.copy(fontFamily = HandwrittenFontFamily),
+                        color = Color(0xFF2B2B2B)
+                    )
+                    DatePickerButton(selectedEpochDay = selectedEpochDay, onDateSelected = viewModel::selectDay)
+                }
                 IconButton(onClick = { viewModel.selectDay(selectedEpochDay + 1) }) {
                     Icon(Icons.Filled.ChevronRight, contentDescription = "Next day")
                 }
@@ -108,7 +114,8 @@ fun PlannerScreen(viewModel: PlannerViewModel) {
                     TaskRow(
                         task = task,
                         onToggleDone = { viewModel.toggleDone(task) },
-                        onDelete = { viewModel.delete(task) }
+                        onDelete = { viewModel.delete(task) },
+                        onEdit = { editingTask = task }
                     )
                 }
             }
@@ -118,16 +125,28 @@ fun PlannerScreen(viewModel: PlannerViewModel) {
     if (showAddDialog) {
         AddTaskDialog(
             onDismiss = { showAddDialog = false },
-            onAdd = { title, startMinute, endMinute, remind ->
+            onSave = { title, startMinute, endMinute, remind ->
                 viewModel.addTask(title, startMinute, endMinute, remind)
                 showAddDialog = false
+            }
+        )
+    }
+
+    editingTask?.let { task ->
+        AddTaskDialog(
+            existing = task,
+            existingReminder = viewModel.reminderConfigFor(task.reminderConfigId),
+            onDismiss = { editingTask = null },
+            onSave = { title, startMinute, endMinute, remind ->
+                viewModel.updateTask(task, title, startMinute, endMinute, remind)
+                editingTask = null
             }
         )
     }
 }
 
 @Composable
-private fun TaskRow(task: TaskItem, onToggleDone: () -> Unit, onDelete: () -> Unit) {
+private fun TaskRow(task: TaskItem, onToggleDone: () -> Unit, onDelete: () -> Unit, onEdit: () -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth().padding(vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
@@ -143,7 +162,7 @@ private fun TaskRow(task: TaskItem, onToggleDone: () -> Unit, onDelete: () -> Un
         }
         Text(
             text = task.title,
-            modifier = Modifier.weight(1f),
+            modifier = Modifier.weight(1f).clickable(onClick = onEdit),
             color = Color(0xFF2B2B2B),
             fontFamily = HandwrittenFontFamily,
             fontSize = 18.sp,

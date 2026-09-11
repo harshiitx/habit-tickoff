@@ -28,7 +28,9 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.harshiitx.habittickoff.data.model.Habit
 import com.harshiitx.habittickoff.data.model.HabitFrequency
+import com.harshiitx.habittickoff.data.model.ReminderConfig
 
 private val EMOJI_CHOICES = listOf("💪", "📚", "🧘", "🎨", "☀️", "💧", "🎯", "📝", "🏃", "🎸")
 private val COLOR_CHOICES = listOf(
@@ -36,17 +38,22 @@ private val COLOR_CHOICES = listOf(
 )
 
 @Composable
-fun AddHabitDialog(onDismiss: () -> Unit, onAdd: (AddHabitResult) -> Unit) {
-    var name by remember { mutableStateOf("") }
-    var emoji by remember { mutableStateOf(EMOJI_CHOICES.first()) }
-    var colorHex by remember { mutableStateOf(COLOR_CHOICES.first()) }
-    var hasReminder by remember { mutableStateOf(false) }
-    var hourText by remember { mutableStateOf("8") }
-    var minuteText by remember { mutableStateOf("0") }
+fun AddHabitDialog(
+    existing: Habit? = null,
+    existingReminder: ReminderConfig? = null,
+    onDismiss: () -> Unit,
+    onSave: (AddHabitResult) -> Unit
+) {
+    var name by remember { mutableStateOf(existing?.name.orEmpty()) }
+    var emoji by remember { mutableStateOf(existing?.emoji ?: EMOJI_CHOICES.first()) }
+    var colorHex by remember { mutableStateOf(existing?.colorHex ?: COLOR_CHOICES.first()) }
+    var hasReminder by remember { mutableStateOf(existingReminder != null) }
+    var hourText by remember { mutableStateOf((existingReminder?.hour ?: 8).toString()) }
+    var minuteText by remember { mutableStateOf((existingReminder?.minute ?: 0).toString()) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("New habit") },
+        title = { Text(if (existing != null) "Edit habit" else "New habit") },
         text = {
             Column {
                 OutlinedTextField(
@@ -98,7 +105,7 @@ fun AddHabitDialog(onDismiss: () -> Unit, onAdd: (AddHabitResult) -> Unit) {
             TextButton(onClick = {
                 val reminderHour = if (hasReminder) hourText.toIntOrNull()?.coerceIn(0, 23) ?: 8 else null
                 val reminderMinute = if (hasReminder) minuteText.toIntOrNull()?.coerceIn(0, 59) ?: 0 else null
-                onAdd(
+                onSave(
                     AddHabitResult(
                         name = name,
                         emoji = emoji,
@@ -110,7 +117,7 @@ fun AddHabitDialog(onDismiss: () -> Unit, onAdd: (AddHabitResult) -> Unit) {
                     )
                 )
             }) {
-                Text("Add")
+                Text(if (existing != null) "Save" else "Add")
             }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } }

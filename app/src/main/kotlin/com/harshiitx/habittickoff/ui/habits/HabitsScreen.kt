@@ -5,10 +5,12 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -17,6 +19,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.harshiitx.habittickoff.data.model.Habit
 import java.time.LocalDate
 
 @Composable
@@ -27,6 +30,8 @@ fun HabitsScreen(viewModel: HabitsViewModel) {
 
     var pendingBackdate by remember { mutableStateOf<Pair<String, Long>?>(null) }
     var showAddDialog by remember { mutableStateOf(false) }
+    var editingHabit by remember { mutableStateOf<Habit?>(null) }
+    var deletingHabit by remember { mutableStateOf<Habit?>(null) }
 
     Scaffold(
         floatingActionButton = {
@@ -54,7 +59,9 @@ fun HabitsScreen(viewModel: HabitsViewModel) {
                     statusByEpochDay = statusByEpochDay,
                     today = today,
                     onToggleDoneToday = { viewModel.toggleDoneToday(habit.id) },
-                    onDayClick = { epochDay -> pendingBackdate = habit.id to epochDay }
+                    onDayClick = { epochDay -> pendingBackdate = habit.id to epochDay },
+                    onEdit = { editingHabit = habit },
+                    onDeleteRequest = { deletingHabit = habit }
                 )
             }
             item {
@@ -90,7 +97,7 @@ fun HabitsScreen(viewModel: HabitsViewModel) {
     if (showAddDialog) {
         AddHabitDialog(
             onDismiss = { showAddDialog = false },
-            onAdd = { result ->
+            onSave = { result ->
                 viewModel.addHabit(
                     name = result.name,
                     emoji = result.emoji,
@@ -102,6 +109,44 @@ fun HabitsScreen(viewModel: HabitsViewModel) {
                 )
                 showAddDialog = false
             }
+        )
+    }
+
+    editingHabit?.let { habit ->
+        AddHabitDialog(
+            existing = habit,
+            existingReminder = viewModel.reminderConfigFor(habit.reminderConfigId),
+            onDismiss = { editingHabit = null },
+            onSave = { result ->
+                viewModel.updateHabit(
+                    habitId = habit.id,
+                    name = result.name,
+                    emoji = result.emoji,
+                    colorHex = result.colorHex,
+                    frequency = result.frequency,
+                    activeDaysOfWeek = result.activeDaysOfWeek,
+                    reminderHour = result.reminderHour,
+                    reminderMinute = result.reminderMinute
+                )
+                editingHabit = null
+            }
+        )
+    }
+
+    deletingHabit?.let { habit ->
+        AlertDialog(
+            onDismissRequest = { deletingHabit = null },
+            title = { Text("Delete \"${habit.name}\"?") },
+            text = { Text("This removes it and its whole tracked history. This can't be undone.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.deleteHabit(habit.id)
+                    deletingHabit = null
+                }) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = { TextButton(onClick = { deletingHabit = null }) { Text("Cancel") } }
         )
     }
 }

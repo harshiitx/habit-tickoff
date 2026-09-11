@@ -39,25 +39,22 @@ class PlannerViewModel(
         _selectedEpochDay.value = epochDay
     }
 
+    fun reminderConfigFor(configId: String?): ReminderConfig? =
+        configId?.let { id -> reminderRepository.reminders.value.firstOrNull { it.id == id } }
+
     fun addTask(title: String, startMinuteOfDay: Int?, endMinuteOfDay: Int?, remind: Boolean) {
         if (title.isBlank()) return
         viewModelScope.launch {
             val taskId = UUID.randomUUID().toString()
             val epochDay = _selectedEpochDay.value
-            var reminderConfigId: String? = null
-            if (remind && startMinuteOfDay != null) {
-                val config = ReminderConfig(
-                    id = UUID.randomUUID().toString(),
-                    ownerType = ReminderOwnerType.TASK,
-                    ownerId = taskId,
-                    hour = startMinuteOfDay / 60,
-                    minute = startMinuteOfDay % 60,
-                    oneShotEpochDay = epochDay
-                )
-                reminderRepository.upsert(config)
-                ReminderScheduler.schedule(appContext, config, title.trim())
-                reminderConfigId = config.id
-            }
+            val reminderConfigId = applyReminder(
+                existingConfigId = null,
+                taskId = taskId,
+                title = title.trim(),
+                epochDay = epochDay,
+                startMinuteOfDay = startMinuteOfDay,
+                remind = remind
+            )
             repository.upsert(
                 TaskItem(
                     id = taskId,
@@ -69,6 +66,53 @@ class PlannerViewModel(
                 )
             )
         }
+    }
+
+    fun updateTask(task: TaskItem, title: String, startMinuteOfDay: Int?, endMinuteOfDay: Int?, remind: Boolean) {
+        if (title.isBlank()) return
+        viewModelScope.launch {
+            val reminderConfigId = applyReminder(
+                existingConfigId = task.reminderConfigId,
+                taskId = task.id,
+                title = title.trim(),
+                epochDay = task.epochDay,
+                startMinuteOfDay = startMinuteOfDay,
+                remind = remind
+            )
+            repository.upsert(
+                task.copy(
+                    title = title.trim(),
+                    startMinuteOfDay = startMinuteOfDay,
+                    endMinuteOfDay = endMinuteOfDay,
+                    reminderConfigId = reminderConfigId
+                )
+            )
+        }
+    }
+
+    private suspend fun applyReminder(
+        existingConfigId: String?,
+        taskId: String,
+        title: String,
+        epochDay: Long,
+        startMinuteOfDay: Int?,
+        remind: Boolean
+    ): String? {
+        if (!remind || startMinuteOfDay == null) {
+            existingConfigId?.let { ReminderScheduler.cancel(appContext, it) }
+            return null
+        }
+        val config = ReminderConfig(
+            id = existingConfigId ?: UUID.randomUUID().toString(),
+            ownerType = ReminderOwnerType.TASK,
+            ownerId = taskId,
+            hour = startMinuteOfDay / 60,
+            minute = startMinuteOfDay % 60,
+            oneShotEpochDay = epochDay
+        )
+        reminderRepository.upsert(config)
+        ReminderScheduler.schedule(appContext, config, title)
+        return config.id
     }
 
     fun toggleDone(task: TaskItem) {

@@ -21,7 +21,7 @@ import com.harshiitx.habittickoff.data.model.CompletionStatus
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
 
-private val MissedColor = Color(0xFFEB5757)
+private val MissedColor = Color(0xFFFF5C5C)
 
 /**
  * A GitHub-contributions-style grid: [weeksToShow] columns of 7 days each,
@@ -80,7 +80,7 @@ fun HabitHeatmap(
                     color = color,
                     topLeft = Offset(week * stepPx, dayOfWeekColumn * stepPx),
                     size = Size(cellSizePx, cellSizePx),
-                    cornerRadius = CornerRadius(6f, 6f)
+                    cornerRadius = CornerRadius(8f, 8f)
                 )
             }
         }

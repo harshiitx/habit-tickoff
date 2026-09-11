@@ -60,6 +60,12 @@ class HabitRepository(dataDir: File) {
         upsertHabit(habit.copy(isArchived = true))
     }
 
+    /** Permanently removes a habit and all of its logged history. */
+    suspend fun deleteHabit(habitId: String) {
+        habitsStore.save(habitsStore.items.value.filterNot { it.id == habitId })
+        logsStore.save(logsStore.items.value.filterNot { it.habitId == habitId })
+    }
+
     suspend fun upsertLog(log: HabitLog) {
         val current = logsStore.items.value.toMutableList()
         val index = current.indexOfFirst { it.habitId == log.habitId && it.epochDay == log.epochDay }
