@@ -1,0 +1,49 @@
+name: Android CI
+
+on:
+  push:
+    branches: ["main"]
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: "platform-tools platforms;android-37.0 platforms;android-36 build-tools;36.1.0"
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - run: chmod +x gradlew
+
+      - run: ./gradlew assembleDebug --stacktrace
+
+      - run: ./gradlew test --stacktrace
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: habit-tickoff-debug-${{ github.sha }}
+          path: app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest-debug
+          name: Latest debug build
+          make_latest: true
+          body: Built automatically from commit ${{ github.sha }}.
+          files: app/build/outputs/apk/debug/app-debug.apk
