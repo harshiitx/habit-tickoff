@@ -21,11 +21,15 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 
 @Composable
-fun AddTaskDialog(onDismiss: () -> Unit, onAdd: (title: String, startMinute: Int?, endMinute: Int?) -> Unit) {
+fun AddTaskDialog(
+    onDismiss: () -> Unit,
+    onAdd: (title: String, startMinute: Int?, endMinute: Int?, remind: Boolean) -> Unit
+) {
     var title by remember { mutableStateOf("") }
     var hasTime by remember { mutableStateOf(false) }
     var hourText by remember { mutableStateOf("9") }
     var minuteText by remember { mutableStateOf("0") }
+    var remind by remember { mutableStateOf(false) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -62,6 +66,13 @@ fun AddTaskDialog(onDismiss: () -> Unit, onAdd: (title: String, startMinute: Int
                             modifier = Modifier.padding(start = 8.dp).width(80.dp)
                         )
                     }
+                    Row(
+                        modifier = Modifier.padding(top = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(checked = remind, onCheckedChange = { remind = it })
+                        Text("Remind me")
+                    }
                 }
             }
         },
@@ -74,7 +85,7 @@ fun AddTaskDialog(onDismiss: () -> Unit, onAdd: (title: String, startMinute: Int
                 } else {
                     null
                 }
-                onAdd(title, startMinute, null)
+                onAdd(title, startMinute, null, hasTime && remind)
             }) {
                 Text("Add")
             }

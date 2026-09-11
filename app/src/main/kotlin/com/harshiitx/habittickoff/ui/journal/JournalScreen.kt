@@ -13,6 +13,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
@@ -41,6 +42,7 @@ fun JournalScreen(viewModel: JournalViewModel) {
     val dateLabel = remember(selectedEpochDay) {
         LocalDate.ofEpochDay(selectedEpochDay).format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL))
     }
+    val todayEpochDay = remember { LocalDate.now().toEpochDay() }
 
     var draftText by remember(selectedEpochDay) {
         mutableStateOf(entries.firstOrNull { it.epochDay == selectedEpochDay }?.text.orEmpty())
@@ -61,9 +63,21 @@ fun JournalScreen(viewModel: JournalViewModel) {
             IconButton(onClick = { viewModel.selectDay(selectedEpochDay - 1) }) {
                 Icon(Icons.Filled.ChevronLeft, contentDescription = "Previous day")
             }
-            Text(dateLabel, style = MaterialTheme.typography.titleMedium, color = Color(0xFF2B2B2B))
+            Text(
+                dateLabel,
+                style = MaterialTheme.typography.titleMedium.copy(fontFamily = HandwrittenFontFamily),
+                color = Color(0xFF2B2B2B)
+            )
             IconButton(onClick = { viewModel.selectDay(selectedEpochDay + 1) }) {
                 Icon(Icons.Filled.ChevronRight, contentDescription = "Next day")
+            }
+        }
+        if (selectedEpochDay != todayEpochDay) {
+            TextButton(
+                onClick = { viewModel.selectDay(todayEpochDay) },
+                modifier = Modifier.padding(horizontal = 4.dp)
+            ) {
+                Text("Jump to Today", fontFamily = HandwrittenFontFamily)
             }
         }
         TextField(
@@ -72,7 +86,7 @@ fun JournalScreen(viewModel: JournalViewModel) {
                 draftText = it
                 viewModel.updateText(it)
             },
-            modifier = Modifier.fillMaxSize().padding(20.dp),
+            modifier = Modifier.weight(1f).fillMaxWidth().padding(20.dp),
             placeholder = { Text("Dear diary...") },
             textStyle = TextStyle(fontFamily = HandwrittenFontFamily, fontSize = 22.sp, color = Color(0xFF2B2B2B)),
             colors = TextFieldDefaults.colors(

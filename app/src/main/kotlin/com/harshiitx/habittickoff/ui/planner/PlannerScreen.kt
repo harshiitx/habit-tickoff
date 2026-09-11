@@ -1,7 +1,7 @@
 package com.harshiitx.habittickoff.ui.planner
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -21,6 +21,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -32,9 +33,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.harshiitx.habittickoff.data.model.TaskItem
 import com.harshiitx.habittickoff.data.model.TaskStatus
 import com.harshiitx.habittickoff.ui.common.ruledPaperBackground
+import com.harshiitx.habittickoff.ui.theme.HandwrittenFontFamily
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
@@ -46,6 +49,7 @@ fun PlannerScreen(viewModel: PlannerViewModel) {
     val selectedEpochDay by viewModel.selectedEpochDay.collectAsState()
     val allTasks by viewModel.tasks.collectAsState()
     var showAddDialog by remember { mutableStateOf(false) }
+    val todayEpochDay = remember { LocalDate.now().toEpochDay() }
 
     val dateLabel = remember(selectedEpochDay) {
         LocalDate.ofEpochDay(selectedEpochDay).format(DateTimeFormatter.ofLocalizedDate(FormatStyle.FULL))
@@ -63,7 +67,7 @@ fun PlannerScreen(viewModel: PlannerViewModel) {
             }
         }
     ) { innerPadding ->
-        Box(modifier = Modifier.padding(innerPadding).fillMaxSize().ruledPaperBackground()) {
+        Column(modifier = Modifier.padding(innerPadding).fillMaxSize().ruledPaperBackground()) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -72,17 +76,39 @@ fun PlannerScreen(viewModel: PlannerViewModel) {
                 IconButton(onClick = { viewModel.selectDay(selectedEpochDay - 1) }) {
                     Icon(Icons.Filled.ChevronLeft, contentDescription = "Previous day")
                 }
-                Text(dateLabel, style = MaterialTheme.typography.titleMedium, color = Color(0xFF2B2B2B))
+                Text(
+                    dateLabel,
+                    style = MaterialTheme.typography.titleMedium.copy(fontFamily = HandwrittenFontFamily),
+                    color = Color(0xFF2B2B2B)
+                )
                 IconButton(onClick = { viewModel.selectDay(selectedEpochDay + 1) }) {
                     Icon(Icons.Filled.ChevronRight, contentDescription = "Next day")
                 }
             }
-            LazyColumn(modifier = Modifier.padding(top = 56.dp, start = 8.dp, end = 8.dp)) {
+            if (selectedEpochDay != todayEpochDay) {
+                TextButton(
+                    onClick = { viewModel.selectDay(todayEpochDay) },
+                    modifier = Modifier.padding(horizontal = 4.dp)
+                ) {
+                    Text("Jump to Today", fontFamily = HandwrittenFontFamily)
+                }
+            }
+            LazyColumn(modifier = Modifier.weight(1f).padding(horizontal = 8.dp)) {
+                if (dayTasks.isEmpty()) {
+                    item {
+                        Text(
+                            "No tasks for this day. Tap + to add one.",
+                            color = Color(0xFF2B2B2B),
+                            fontFamily = HandwrittenFontFamily,
+                            modifier = Modifier.padding(top = 24.dp)
+                        )
+                    }
+                }
                 items(dayTasks, key = { it.id }) { task ->
                     TaskRow(
                         task = task,
                         onToggleDone = { viewModel.toggleDone(task) },
-                        onDelete = { viewModel.delete(task.id) }
+                        onDelete = { viewModel.delete(task) }
                     )
                 }
             }
@@ -92,8 +118,8 @@ fun PlannerScreen(viewModel: PlannerViewModel) {
     if (showAddDialog) {
         AddTaskDialog(
             onDismiss = { showAddDialog = false },
-            onAdd = { title, startMinute, endMinute ->
-                viewModel.addTask(title, startMinute, endMinute)
+            onAdd = { title, startMinute, endMinute, remind ->
+                viewModel.addTask(title, startMinute, endMinute, remind)
                 showAddDialog = false
             }
         )
@@ -108,12 +134,19 @@ private fun TaskRow(task: TaskItem, onToggleDone: () -> Unit, onDelete: () -> Un
     ) {
         Checkbox(checked = task.status == TaskStatus.DONE, onCheckedChange = { onToggleDone() })
         task.startMinuteOfDay?.let {
-            Text(minuteOfDayLabel(it), modifier = Modifier.width(56.dp), color = Color(0xFF2B2B2B))
+            Text(
+                minuteOfDayLabel(it),
+                modifier = Modifier.width(56.dp),
+                color = Color(0xFF2B2B2B),
+                fontFamily = HandwrittenFontFamily
+            )
         }
         Text(
             text = task.title,
             modifier = Modifier.weight(1f),
             color = Color(0xFF2B2B2B),
+            fontFamily = HandwrittenFontFamily,
+            fontSize = 18.sp,
             textDecoration = if (task.status == TaskStatus.DONE) TextDecoration.LineThrough else null
         )
         IconButton(onClick = onDelete) {

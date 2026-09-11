@@ -66,7 +66,9 @@ fun AppNavHost() {
             composable(AppRoute.HABITS.route) {
                 val viewModel: HabitsViewModel = viewModel(
                     factory = viewModelFactory {
-                        initializer { HabitsViewModel(app.habitRepository) }
+                        initializer {
+                            HabitsViewModel(app.habitRepository, app.reminderRepository, app)
+                        }
                     }
                 )
                 HabitsScreen(viewModel)
@@ -74,7 +76,9 @@ fun AppNavHost() {
             composable(AppRoute.PLANNER.route) {
                 val viewModel: PlannerViewModel = viewModel(
                     factory = viewModelFactory {
-                        initializer { PlannerViewModel(app.taskRepository) }
+                        initializer {
+                            PlannerViewModel(app.taskRepository, app.reminderRepository, app)
+                        }
                     }
                 )
                 PlannerScreen(viewModel)

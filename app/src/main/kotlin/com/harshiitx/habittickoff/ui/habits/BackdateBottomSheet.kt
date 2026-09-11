@@ -22,6 +22,7 @@ fun BackdateBottomSheet(
     epochDay: Long,
     onMarkDone: () -> Unit,
     onMarkMissed: () -> Unit,
+    onClear: () -> Unit,
     onDismiss: () -> Unit
 ) {
     val date = LocalDate.ofEpochDay(epochDay)
@@ -40,6 +41,9 @@ fun BackdateBottomSheet(
             }
             OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = onMarkMissed) {
                 Text("Mark Missed")
+            }
+            OutlinedButton(modifier = Modifier.fillMaxWidth(), onClick = onClear) {
+                Text("Clear entry")
             }
         }
     }

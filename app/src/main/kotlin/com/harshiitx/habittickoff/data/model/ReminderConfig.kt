@@ -12,5 +12,7 @@ data class ReminderConfig(
     val hour: Int,
     val minute: Int,
     val daysOfWeek: Set<Int> = (1..7).toSet(),
+    /** Set only for a task's one-time reminder; null means a recurring habit reminder. */
+    val oneShotEpochDay: Long? = null,
     val enabled: Boolean = true
 )

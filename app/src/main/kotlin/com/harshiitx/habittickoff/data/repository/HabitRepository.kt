@@ -84,4 +84,9 @@ class HabitRepository(dataDir: File) {
             )
         )
     }
+
+    /** Resets a day back to "no entry" — distinct from marking it MISSED. */
+    suspend fun clearLog(habitId: String, epochDay: Long) {
+        logsStore.save(logsStore.items.value.filterNot { it.habitId == habitId && it.epochDay == epochDay })
+    }
 }
