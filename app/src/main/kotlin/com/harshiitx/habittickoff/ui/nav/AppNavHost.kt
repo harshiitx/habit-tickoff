@@ -22,7 +22,9 @@ import com.harshiitx.habittickoff.HabitTickoffApp
 import com.harshiitx.habittickoff.ui.habits.HabitsScreen
 import com.harshiitx.habittickoff.ui.habits.HabitsViewModel
 import com.harshiitx.habittickoff.ui.journal.JournalScreen
+import com.harshiitx.habittickoff.ui.journal.JournalViewModel
 import com.harshiitx.habittickoff.ui.planner.PlannerScreen
+import com.harshiitx.habittickoff.ui.planner.PlannerViewModel
 import com.harshiitx.habittickoff.ui.quotes.QuotesScreen
 import com.harshiitx.habittickoff.ui.settings.SettingsScreen
 
@@ -68,8 +70,22 @@ fun AppNavHost() {
                 )
                 HabitsScreen(viewModel)
             }
-            composable(AppRoute.PLANNER.route) { PlannerScreen() }
-            composable(AppRoute.JOURNAL.route) { JournalScreen() }
+            composable(AppRoute.PLANNER.route) {
+                val viewModel: PlannerViewModel = viewModel(
+                    factory = viewModelFactory {
+                        initializer { PlannerViewModel(app.taskRepository) }
+                    }
+                )
+                PlannerScreen(viewModel)
+            }
+            composable(AppRoute.JOURNAL.route) {
+                val viewModel: JournalViewModel = viewModel(
+                    factory = viewModelFactory {
+                        initializer { JournalViewModel(app.journalRepository) }
+                    }
+                )
+                JournalScreen(viewModel)
+            }
             composable(AppRoute.QUOTES.route) { QuotesScreen() }
             composable(AppRoute.SETTINGS.route) { SettingsScreen() }
         }
